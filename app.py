@@ -1,4 +1,4 @@
-# File: app.py (Phiên bản nhập tọa độ Data Editor + Công cụ lấy tọa độ + Slider Zoom)
+# File: app.py (Phiên bản Đã loại bỏ Node 0)
 
 import streamlit as st
 import networkx as nx
@@ -10,21 +10,20 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 import io
 
 # --- QUAN TRỌNG: ĐẢM BẢO FILE visualize.py ĐÃ ĐƯỢC CẬP NHẬT ---
-# Bạn cần đảm bảo file visualize.py có chứa cả draw_graph_map và create_mock_tcv_graph_image
 from visualize import draw_graph_map, create_mock_tcv_graph_image 
 
 # =================================================================
 # I. CÁC HÀM XỬ LÝ ĐỒ THỊ VÀ TỌA ĐỘ
 # =================================================================
 
-# --- HÀM TẠO CẤU TRÚC ĐỒ THỊ CƠ SỞ (ĐÃ CẬP NHẬT TỌA ĐỘ & CẠNH MỚI) ---
+# --- HÀM TẠO CẤU TRÚC ĐỒ THỊ CƠ SỞ (CHỈ CÓ NODES TỪ 1 ĐẾN 71) ---
 @st.cache_data(show_spinner=False)
 def create_tcv_full_graph_base():
     G = nx.Graph()
     
-    # 1. Tọa độ chuẩn hóa (x, y) - DỮ LIỆU BẠN CUNG CẤP
+    # 1. Tọa độ chuẩn hóa (x, y) - CHỈ CÓ NODES TỪ 1 ĐẾN 71
     positions = {
-        0: (0.0001, 0.9999), 1: (0.6071, 0.5700), 2: (0.4543, 0.6900),
+        1: (0.6071, 0.5700), 2: (0.4543, 0.6900),
         3: (0.5014, 0.5515), 4: (0.4157, 0.6400), 5: (0.3614, 0.6313),
         6: (0.3929, 0.4506), 7: (0.3843, 0.3000), 8: (0.4571, 0.2950),
         9: (0.4200, 0.1810), 10: (0.5457, 0.2540), 11: (0.6129, 0.4520),
@@ -50,16 +49,15 @@ def create_tcv_full_graph_base():
         69: (0.7943, 0.3500), 70: (0.7500, 0.2500), 71: (0.6929, 0.1900)
     }
 
-    # 2. Định nghĩa các cạnh và trọng số (Nodes 0-71)
-    # Danh sách cạnh mô phỏng mới, trọng số mặc định là 1
+    # 2. Định nghĩa các cạnh và trọng số (ĐÃ XÓA CẠNH LIÊN QUAN ĐẾN NODE 0)
     edges = [
-        # Khu vực phía Tây/Tây Bắc (0-9, 38, 39, 44, 45, 46, 51)
-        (0, 9, 1), (9, 53, 1), (53, 10, 1), (53, 8, 1), (8, 7, 1),
+        # Khu vực phía Tây/Tây Bắc (1-9, 38, 39, 44, 45, 46, 51)
+        (9, 53, 1), (53, 10, 1), (53, 8, 1), (8, 7, 1),
         (7, 51, 1), (51, 38, 1), (38, 6, 1), (6, 37, 1), (37, 43, 1),
         (43, 44, 1), (44, 66, 1), (66, 39, 1), (39, 5, 1), (5, 4, 1),
         (4, 2, 1), (2, 46, 1), (46, 45, 1), (45, 39, 1),
 
-        # Khu vực Trung tâm/Hồ (3, 14, 19, 30, 40, 63, 65, 67, 68)
+        # Khu vực Trung tâm/Hồ (1, 3, 14, 19, 30, 40, 63, 65, 67, 68)
         (43, 63, 1), (63, 3, 1), (3, 65, 1), (65, 1, 1), (1, 64, 1),
         (64, 14, 1), (14, 30, 1), (30, 19, 1), (19, 48, 1), (48, 15, 1),
         (40, 67, 1), (67, 43, 1), (67, 68, 1), (68, 36, 1), (36, 52, 1),
@@ -88,13 +86,13 @@ def create_tcv_full_graph_base():
         (12, 14, 0.5), (17, 60, 0.5), (25, 62, 0.5), (30, 64, 0.5)
     ]
 
+    # Chỉ thêm các Nodes có trong danh sách tọa độ (1-71)
     for node in positions: 
-        if node <= 71:
-            G.add_node(node)
+        G.add_node(node)
 
     for u, v, w in edges: 
+        # Chỉ thêm cạnh nếu cả hai node đều tồn tại trong G (1-71)
         if u in G.nodes and v in G.nodes:
-            # Sử dụng weight_key làm trọng số chính
             G.add_edge(u, v, weight=w) 
     
     # Lọc lại positions chỉ giữ các nodes đã được thêm vào G
@@ -104,7 +102,6 @@ def create_tcv_full_graph_base():
 
 # --- ĐƯỜNG ĐI NGẮN NHẤT (DIJKSTRA) ---
 def shortest_path(G, start, end):
-    # Đảm bảo dùng 'weight' làm khóa trọng số
     weight_key = 'weight' if nx.get_edge_attributes(G, 'weight') else None
     try:
         path = nx.dijkstra_path(G, start, end, weight=weight_key)
@@ -118,11 +115,12 @@ def shortest_path(G, start, end):
 # =================================================================
 
 st.set_page_config(layout="wide", page_title="Bản đồ TCV - Chỉnh sửa Tọa độ")
-st.title("🗺️ Bản đồ TCV - Công cụ Chỉnh sửa Tọa độ Node (0-71)")
+st.title("🗺️ Bản đồ TCV - Công cụ Chỉnh sửa Tọa độ Node (1-71)")
 
 # Tải đồ thị cơ sở 
 G_TCV_base, pos_TCV_base = create_tcv_full_graph_base() 
 nodes_TCV = sorted(list(G_TCV_base.nodes)) 
+# Khi node 0 bị loại bỏ, Node đầu tiên là 1
 display_nodes = [f"Node {num}" for num in nodes_TCV]
 image_path = "thao_cam_vien.jpg"
 full_image_path = os.path.join("assets", image_path)
@@ -144,7 +142,7 @@ if 'edited_positions_df' not in st.session_state:
     st.session_state.edited_positions_df['y'] = st.session_state.edited_positions_df['y'].round(4)
 
 
-st.sidebar.header("🛠️ Hiệu chỉnh Tọa độ Node (0.0001 đến 1.0000)")
+st.sidebar.header("🛠️ Hiệu chỉnh Tọa độ Node (1 đến 71)")
 st.sidebar.info("Chỉnh sửa tọa độ X (ngang) và Y (dọc) của từng Node bằng tay.")
 
 edited_df = st.sidebar.data_editor(
@@ -171,11 +169,11 @@ current_pos_dict = {
 # --- 2. LOGIC TÌM ĐƯỜNG (MAIN CONTENT) ---
 st.subheader("1. Tìm Đường đi Ngắn nhất")
 col1, col2 = st.columns(2)
+# Điều chỉnh index mặc định cho Node 1 và Node 2
+start_node_index = 0 
+end_node_index = 1 if len(display_nodes) > 1 else 0
+
 with col1: 
-    # Thiết lập chỉ mục mặc định an toàn
-    start_node_index = 0 if len(display_nodes) > 0 else 0
-    end_node_index = 1 if len(display_nodes) > 1 else 0
-    
     start_node_str = st.selectbox("Điểm Bắt đầu:", display_nodes, key="tcv_start", index=start_node_index)
     start_node = int(start_node_str.split(' ')[1]) 
 with col2: 
@@ -206,10 +204,7 @@ st.subheader("2. Công cụ Hỗ trợ Xác định Tọa độ")
 st.info("Click vào bất kỳ điểm nào trên bản đồ dưới đây để nhận tọa độ chuẩn hóa (0.0001 - 1.0000). Sau đó, bạn chỉ cần sao chép giá trị này vào cột X hoặc Y trong sidebar.")
 
 if os.path.exists(full_image_path):
-    # Dùng ảnh nền bản đồ cho công cụ lấy tọa độ
     image_to_click = Image.open(full_image_path)
-    
-    # Hiển thị ảnh và bắt sự kiện click
     value = streamlit_image_coordinates(image_to_click, key="coord_finder", width=700)
     
     col_x, col_y = st.columns(2)
@@ -220,7 +215,6 @@ if os.path.exists(full_image_path):
         w_widget = value['width']
         h_widget = value['height']
 
-        # Chuẩn hóa tọa độ click về khoảng [0.0001, 1.0000]
         x_normalized = x_click / w_widget
         y_normalized = y_click / h_widget
         
@@ -247,7 +241,6 @@ st.markdown("---")
 # --- 4. VẼ BẢN ĐỒ VỚI TỌA ĐỘ ĐÃ CHỈNH SỬA VÀ THÊM SLIDER ZOOM ---
 st.subheader("3. Bản đồ Đồ thị (Sử dụng thanh trượt Zoom)")
 
-# Thanh trượt điều khiển Zoom
 zoom_level = st.slider(
     'Mức độ Zoom (0.0: Max Zoom Out, 1.0: Max Zoom In)',
     min_value=0.0,
@@ -257,7 +250,6 @@ zoom_level = st.slider(
     format='%.2f'
 )
 
-# Tính toán giới hạn trục dựa trên mức zoom (Giả định trung tâm là 0.5, 0.5)
 view_range = 1.0 - (zoom_level * 0.9)
 center_x, center_y = 0.5, 0.5 
 
@@ -271,7 +263,6 @@ x_max = min(1.0, x_max)
 y_min = max(0.0, y_min)
 y_max = min(1.0, y_max)
 
-# Tạo Figure Matplotlib và truyền giới hạn trục mới vào
 fig = draw_graph_map(
     G_TCV_base, 
     current_pos_dict, 
@@ -282,5 +273,4 @@ fig = draw_graph_map(
     y_lim=(y_min, y_max)
 ) 
 
-# Sử dụng st.pyplot() để kích hoạt Matplotlib Toolbar (vẫn dùng được Zoom/Pan của Matplotlib)
 st.pyplot(fig, use_container_width=True)
