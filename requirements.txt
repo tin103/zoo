@@ -1,5 +1,6 @@
 streamlit
 networkx
 matplotlib
-pillow
 pandas
+Pillow  # Hoặc pillow
+streamlit-image-coordinates
