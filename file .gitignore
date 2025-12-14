@@ -1,0 +1,12 @@
+# --- BẮT ĐẦU FILE .gitignore ---
+.venv/
+__pycache__/
+*.pyc
+temp_mock_path.png
+# --- KẾT THÚC FILE .gitignore ---
+
+# Thêm tất cả các file (trừ những file trong .gitignore)
+git add .
+
+# Commit lần đầu tiên
+git commit -m "Initial commit: TCV Graph App with interactive coordinates and zoom"
